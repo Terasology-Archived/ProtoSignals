@@ -1,0 +1,10 @@
+{
+    "displayName": "Signal Emitter",
+    "tiles": {
+        "all": "ProtoSignals:SignalOutput"
+    },
+    "entity": {
+        "prefab": "ProtoSignals:SignalSwitch",
+        "keepActive": true
+    }
+}

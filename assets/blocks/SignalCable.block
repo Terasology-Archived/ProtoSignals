@@ -1,0 +1,38 @@
+{
+    "displayName": "Signal Cable",
+    "entity": {
+        "prefab": "ProtoSignals:SignalCable"
+    },
+
+    "family": "cable",
+    "no_connections": {
+        "shape": "ProtoSignals:NoCon"
+    },
+    "one_connection": {
+        "shape": "ProtoSignals:OneCon"
+    },
+    "line_connection": {
+        "shape": "ProtoSignals:TwoConLine"
+    },
+    "2d_corner": {
+        "shape": "ProtoSignals:TwoConCorn"
+    },
+    "3d_corner": {
+        "shape": "ProtoSignals:ThreeConCorn"
+    },
+    "2d_t": {
+        "shape": "ProtoSignals:ThreeConTee"
+    },
+    "cross": {
+        "shape": "ProtoSignals:FourConCross"
+    },
+    "3d_side": {
+        "shape": "ProtoSignals:FourConTee"
+    },
+    "five_connections": {
+        "shape": "ProtoSignals:FiveCon"
+    },
+    "all": {
+        "shape": "ProtoSignals:SixCon"
+    }
+}

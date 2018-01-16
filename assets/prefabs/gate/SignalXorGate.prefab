@@ -1,0 +1,7 @@
+{
+  "SignalLeaf":{
+        "inputs": 59,
+        "outputs": 4
+    },
+    "XorGate": {}
+}

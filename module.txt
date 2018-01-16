@@ -1,0 +1,10 @@
+{
+    "id" : "ProtoSignals",
+    "version" : "0.1.1-SNAPSHOT",
+    "author" : "Marcin Sciesinski <marcins78@gmail.com>, polli104",
+    "displayName" : "Signalling framework",
+    "description" : "Mod containing blocks that send signals to other blocks",
+    "dependencies" : [
+    ],
+    "isServerSideOnly" : false
+}

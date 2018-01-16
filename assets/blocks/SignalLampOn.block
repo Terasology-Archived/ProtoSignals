@@ -1,0 +1,10 @@
+{
+    "luminance": 15,
+    "inventory": {
+        "pickupFamily": "ProtoSignals:SignalLampOff"
+    },
+    "entity": {
+        "prefab": "ProtoSignals:SignalLampOn",
+        "keepActive": true
+    }
+}
