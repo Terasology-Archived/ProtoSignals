@@ -18,4 +18,6 @@ package org.terasology.signalling.components.gates;
 import org.terasology.entitySystem.Component;
 
 public class OrGateComponent implements Component {
+    public byte strength = 12;
+    public long delay = 500;
 }

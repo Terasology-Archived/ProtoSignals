@@ -29,5 +29,5 @@ import java.util.List;
 public class SignalStateComponent  implements Component {
 
     public static final ImmutableList<Side> OUTPUT_SIDES = ImmutableList.of(Side.LEFT,Side.FRONT,Side.RIGHT,Side.BACK,Side.TOP,Side.BOTTOM);
-    public int[] outputs = new int[6];
+    public byte[] outputs = new byte[6];
 }

@@ -19,4 +19,5 @@ import org.terasology.entitySystem.Component;
 
 public class ToggleSwitchComponent implements Component {
     public boolean isActive = false;
+    public byte strength = 12;
 }

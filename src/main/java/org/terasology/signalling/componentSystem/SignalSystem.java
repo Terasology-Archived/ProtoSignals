@@ -24,6 +24,7 @@ import org.terasology.entitySystem.entity.EntityRef;
 import org.terasology.entitySystem.systems.BaseComponentSystem;
 import org.terasology.entitySystem.systems.RegisterMode;
 import org.terasology.entitySystem.systems.RegisterSystem;
+import org.terasology.entitySystem.systems.UpdateSubscriberSystem;
 import org.terasology.logic.config.ModuleConfigManager;
 import org.terasology.math.Side;
 import org.terasology.math.SideBitFlag;
@@ -40,7 +41,9 @@ import org.terasology.world.block.Block;
 import org.terasology.world.block.BlockComponent;
 import org.terasology.world.block.family.MultiConnectFamily;
 
+import java.util.Comparator;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,8 +51,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @RegisterSystem(value = RegisterMode.AUTHORITY)
 @Share(value = SignalSystem.class)
-public class SignalSystem extends BaseComponentSystem {
+public class SignalSystem extends BaseComponentSystem implements UpdateSubscriberSystem {
     private static final Logger logger = LoggerFactory.getLogger(SignalSystem.class);
+    private PriorityQueue<SignalDelayHandler> delays = new PriorityQueue<>(new SignalDelayComparitor());
 
     @In
     private Time time;
@@ -59,6 +63,7 @@ public class SignalSystem extends BaseComponentSystem {
     private BlockEntityRegistry blockEntityRegistry;
     @In
     private ModuleConfigManager moduleConfigManager;
+
 
     private byte getConnection(EntityRef entityRef, byte sides)
     {
@@ -111,7 +116,7 @@ public class SignalSystem extends BaseComponentSystem {
         return signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)];
     }
 
-    public boolean setLeafOutput(EntityRef entityRef, Side side, int strength) {
+    public boolean setLeafOutput(EntityRef entityRef, Side side, byte strength) {
         if (!entityRef.hasComponent(SignalLeafComponent.class))
             return false;
 
@@ -123,10 +128,29 @@ public class SignalSystem extends BaseComponentSystem {
             if(signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] == strength)
                 return true;
 
-            signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] = strength;
+            int sideIndex = SignalStateComponent.OUTPUT_SIDES.indexOf(side);
+            int previousValue = signalStateComponent.outputs[sideIndex];
+            signalStateComponent.outputs[sideIndex] = strength;
             entityRef.addOrSaveComponent(signalStateComponent);
-            signalAllLeafsFromSide(entityRef, side);
+            signalAllLeafsFromSide(entityRef, side,Math.max(strength,previousValue));
             return true;
+        }
+        return false;
+    }
+
+    public boolean setLeafOutput(EntityRef entityRef, Side side, byte strength,long delay) {
+        if (!entityRef.hasComponent(SignalLeafComponent.class))
+            return false;
+        if ((getConnectedOutputs(entityRef) & SideBitFlag.getSide(side)) > 0) {
+            SignalStateComponent signalStateComponent = entityRef.getComponent(SignalStateComponent.class);
+            if (signalStateComponent == null)
+                signalStateComponent = new SignalStateComponent();
+            if (signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] == strength)
+                return true;
+
+            delays.add(new SignalDelayHandler(delay, time.getGameTimeInMs(), entityRef, strength, side));
+            return true;
+
         }
         return false;
     }
@@ -148,7 +172,7 @@ public class SignalSystem extends BaseComponentSystem {
                 strength.set(delta);
             }
             return true;
-        });
+        },Integer.MAX_VALUE);
         return strength.get();
     }
 
@@ -169,13 +193,15 @@ public class SignalSystem extends BaseComponentSystem {
 
 
 
-    public void signalAllLeafsFromSide(EntityRef entityRef, Side side) {
+    public void signalAllLeafsFromSide(EntityRef entityRef, Side side, int distanceCap) {
+
+
         if (entityRef.hasComponent(SignalLeafComponent.class)) {
             BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
             this.findDistanceToLeaf(blockComponent.getPosition(), side, (targetSide, distance, target) -> {
                 signalLeafChange(target);
                 return true;
-            });
+            },distanceCap);
         }
     }
 
@@ -190,12 +216,14 @@ public class SignalSystem extends BaseComponentSystem {
         entityRef.send(new LeafNodeSignalChange(inputs));
     }
 
-    public void findDistanceToLeaf(Vector3i location, Side side, SignalResponse handler) {
+    public void findDistanceToLeaf(Vector3i location, Side side, SignalResponse handler, int distanceCap) {
         TreeMap<Integer, Set<Vector3i>> toVisit = new TreeMap<>();
         toVisit.put(1, Sets.newHashSet(new Vector3i(location).add(side.getVector3i())));
         Set<Vector3i> visited = Sets.newHashSet(location);
         do {
             int minimum = toVisit.firstKey();
+            if(minimum >  distanceCap )
+                break;
             Set<Vector3i> entries = toVisit.get(minimum);
             for (Vector3i entry : entries) {
                 EntityRef ref = blockEntityRegistry.getBlockEntityAt(entry);
@@ -222,8 +250,46 @@ public class SignalSystem extends BaseComponentSystem {
 
     }
 
+    @Override
+    public void update(float delta) {
+        while (delays.peek() != null && delays.peek().getTime() < time.getGameTimeInMs()){
+            SignalDelayHandler signalDelayHandler = delays.poll();
+            this.setLeafOutput(signalDelayHandler.entityRef,signalDelayHandler.side,signalDelayHandler.strength);
+        }
+    }
+
     public interface SignalResponse{
         boolean response(Side targetSide,int distance, EntityRef target);
+    }
+
+    public static class SignalDelayHandler {
+        public final long delta;
+        public final long currentTime;
+        public final EntityRef entityRef;
+        public final byte strength;
+        public final Side side;
+
+        SignalDelayHandler(long delta, long currentTime, EntityRef entityRef, byte strength, Side side){
+            this.delta = delta;
+            this.currentTime = currentTime;
+
+            this.entityRef = entityRef;
+            this.strength = strength;
+            this.side = side;
+        }
+
+        public long getTime() {
+            return currentTime + delta;
+        }
+
+    }
+
+    public static class  SignalDelayComparitor implements Comparator<SignalDelayHandler>{
+
+        @Override
+        public int compare(SignalDelayHandler t1, SignalDelayHandler t2) {
+            return (int) (t1.getTime() - t2.getTime());
+        }
     }
 
 }
