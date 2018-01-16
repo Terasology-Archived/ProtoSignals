@@ -23,14 +23,27 @@ import org.terasology.entitySystem.systems.RegisterSystem;
 import org.terasology.logic.delay.DelayedActionComponent;
 import org.terasology.logic.delay.DelayedActionTriggeredEvent;
 import org.terasology.logic.health.BeforeDestroyEvent;
+import org.terasology.logic.health.DoDestroyEvent;
+import org.terasology.math.Side;
+import org.terasology.math.SideBitFlag;
+import org.terasology.registry.In;
 import org.terasology.signalling.components.CableComponent;
 import org.terasology.signalling.components.SignalLeafComponent;
+import org.terasology.world.WorldProvider;
+import org.terasology.world.block.Block;
+import org.terasology.world.block.BlockComponent;
+import org.terasology.world.block.BlockManager;
 import org.terasology.world.block.items.OnBlockItemPlaced;
 
 @RegisterSystem(value = RegisterMode.AUTHORITY)
 public class SignalStateSystem extends BaseComponentSystem {
 
-
+    @In
+    private SignalSystem signalSystem;
+    @In
+    private WorldProvider worldProvider;
+    @In
+    private BlockManager blockManager;
     /**
      * Adds the placed block to the correct list
      *
@@ -39,24 +52,21 @@ public class SignalStateSystem extends BaseComponentSystem {
      */
     @ReceiveEvent()
     public void onBlockPlaced(OnBlockItemPlaced event, EntityRef entityRef) {
-//        EntityRef ref = event.getPlacedBlock();
-//        final Vector3i location = event.getPosition();
-//        if (ref.hasComponent(CableComponent.class)) {
-//
-//        } else if (ref.hasComponent(SignalLeafComponent.class)) {
-//
-//        }
-
+        signalSystem.signalAllSidesAroundLocation(event.getPosition(),Integer.MAX_VALUE);
     }
 
     @ReceiveEvent(components = {SignalLeafComponent.class})
-    public void onLeafRemoved(BeforeDestroyEvent event, EntityRef block) {
-
+    public void onLeafRemoved(DoDestroyEvent event, EntityRef block) {
+        BlockComponent blockComponent = block.getComponent(BlockComponent.class);
+        worldProvider.setBlock(blockComponent.getPosition(), blockManager.getBlock(BlockManager.AIR_ID));
+        signalSystem.signalAllSidesAroundLocation(blockComponent.getPosition(),Integer.MAX_VALUE);
     }
 
     @ReceiveEvent(components = {CableComponent.class})
-    public void onCableRemoved(BeforeDestroyEvent event, EntityRef block) {
-
+    public void onCableRemoved(DoDestroyEvent event, EntityRef block) {
+        BlockComponent blockComponent = block.getComponent(BlockComponent.class);
+        worldProvider.setBlock(blockComponent.getPosition(), blockManager.getBlock(BlockManager.AIR_ID));
+        signalSystem.signalAllSidesAroundLocation(blockComponent.getPosition(),Integer.MAX_VALUE);
     }
 
 }

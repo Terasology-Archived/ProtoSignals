@@ -192,10 +192,18 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
     }
 
 
+    public void signalAllSidesAroundLocation(Vector3i location, int distanceCap){
+
+        for(Side side: Side.values()) {
+            this.findDistanceToLeaf(location, side, (targetSide, distance, target) -> {
+                signalLeafChange(target);
+                return true;
+            }, distanceCap);
+        }
+
+    }
 
     public void signalAllLeafsFromSide(EntityRef entityRef, Side side, int distanceCap) {
-
-
         if (entityRef.hasComponent(SignalLeafComponent.class)) {
             BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
             this.findDistanceToLeaf(blockComponent.getPosition(), side, (targetSide, distance, target) -> {
@@ -217,8 +225,15 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
     }
 
     public void findDistanceToLeaf(Vector3i location, Side side, SignalResponse handler, int distanceCap) {
+        Vector3i startingSide = new Vector3i(location).add(side.getVector3i());
+        EntityRef entityRef =  blockEntityRegistry.getBlockEntityAt(startingSide);
+        if(entityRef.hasComponent(SignalLeafComponent.class)){
+            handler.response(side.reverse(),0,entityRef);
+            return;
+        }
+
         TreeMap<Integer, Set<Vector3i>> toVisit = new TreeMap<>();
-        toVisit.put(1, Sets.newHashSet(new Vector3i(location).add(side.getVector3i())));
+        toVisit.put(1, Sets.newHashSet(startingSide));
         Set<Vector3i> visited = Sets.newHashSet(location);
         do {
             int minimum = toVisit.firstKey();
