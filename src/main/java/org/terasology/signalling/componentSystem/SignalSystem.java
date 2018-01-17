@@ -65,8 +65,7 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
     private ModuleConfigManager moduleConfigManager;
 
 
-    private byte getConnection(EntityRef entityRef, byte sides)
-    {
+    private byte getConnection(EntityRef entityRef, byte sides, boolean transform) {
         BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
         if (blockComponent == null)
             return 0;
@@ -77,12 +76,21 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
             for (Side side : SideBitFlag.getSides(sides)) {
                 Side rotatedSide = block.getRotation().rotate(side);
                 EntityRef  neighborEntity = blockEntityRegistry.getBlockEntityAt(new Vector3i(location).add(rotatedSide.getVector3i()));
-                if(neighborEntity.hasComponent(CableComponent.class) || neighborEntity.hasComponent(SignalLeafComponent.class))
-                    result |= SideBitFlag.getSide(block.getRotation().rotate(side));
+                if(neighborEntity.hasComponent(CableComponent.class) || neighborEntity.hasComponent(SignalLeafComponent.class)) {
+                    result |= transform ? SideBitFlag.getSide(block.getRotation().rotate(side)) : SideBitFlag.getSide(side);
+                }
             }
             return result;
         }
         return 0;
+    }
+
+    private byte getConnection(EntityRef entityRef, byte sides) {
+        return getConnection(entityRef, sides, true);
+    }
+
+    private byte getUntransformedConnection(EntityRef entityRef, byte sides) {
+        return getConnection(entityRef, sides, false);
     }
 
 
@@ -91,14 +99,28 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
         SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
         if(signalStateComponent == null)
             return 0;
-        return getConnection(entityRef,signalStateComponent.inputs);
+        return getConnection(entityRef, signalStateComponent.inputs);
+    }
+
+    public byte getUntransformedConnectedInputs(EntityRef entityRef){
+        SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
+        if(signalStateComponent == null)
+            return 0;
+        return getUntransformedConnection(entityRef, signalStateComponent.inputs);
     }
 
     public byte getConnectedOutputs(EntityRef entityRef){
         SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
         if(signalStateComponent == null)
             return 0;
-        return getConnection(entityRef,signalStateComponent.outputs);
+        return getConnection(entityRef, signalStateComponent.outputs);
+    }
+
+    public byte getUntransformedConnectedOutputs(EntityRef entityRef){
+        SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
+        if(signalStateComponent == null)
+            return 0;
+        return getUntransformedConnection(entityRef, signalStateComponent.outputs);
     }
 
     public byte getAllConnections(EntityRef entityRef){

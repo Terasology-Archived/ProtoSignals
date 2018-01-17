@@ -81,7 +81,7 @@ public class GateAction extends BaseComponentSystem {
     @ReceiveEvent(components = {BlockComponent.class, NotGateComponent.class, SignalLeafComponent.class})
     public void signalNotChange(LeafNodeSignalChange event, EntityRef entity, BlockComponent blockComponent, NotGateComponent notGateComponent) {
         final int SIDE_BACK = 32;
-        if (signalSystem.getConnectedInputs(entity) == SIDE_BACK && event.getInputs().size() == 0) {
+        if (signalSystem.getUntransformedConnectedInputs(entity) == SIDE_BACK && event.getInputs().size() == 0) {
             // One LOW input, so output HIGH.
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
                 signalSystem.setLeafOutput(entity, side, notGateComponent.strength, notGateComponent.delay);
