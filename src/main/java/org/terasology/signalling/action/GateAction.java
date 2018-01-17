@@ -40,11 +40,13 @@ public class GateAction extends BaseComponentSystem {
 
     @ReceiveEvent(components = {BlockComponent.class, XorGateComponent.class, SignalLeafComponent.class})
     public void signalXorChange(LeafNodeSignalChange event, EntityRef entity, BlockComponent blockComponent, XorGateComponent xorGateComponent) {
-        if (event.getInputs().size() == 1 && event.getInputs().size() != 0) {
+        if (event.getInputs().size() % 2 == 1) {
+            // An odd number of inputs are active: Output HIGH.
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
                 signalSystem.setLeafOutput(entity, side, xorGateComponent.strength, xorGateComponent.delay);
             }
         } else {
+            // An even number of inputs are active: Output LOW. Note that this includes 0 active inputs.
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
                 signalSystem.setLeafOutput(entity, side, (byte) 0, xorGateComponent.delay);
             }
@@ -53,12 +55,13 @@ public class GateAction extends BaseComponentSystem {
 
     @ReceiveEvent(components = {BlockComponent.class, AndGateComponent.class, SignalLeafComponent.class})
     public void signalAndChange(LeafNodeSignalChange event, EntityRef entity, BlockComponent blockComponent, AndGateComponent andGateComponent) {
-
         if (event.getInputs().size() == SideBitFlag.getSides(signalSystem.getConnectedInputs(entity)).size() && event.getInputs().size() != 0) {
+            // More than one input is connected, and all of them are HIGH: Output HIGH.
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
                 signalSystem.setLeafOutput(entity, side, andGateComponent.strength, andGateComponent.delay);
             }
         } else {
+            // No input is connected, or one of the connected inputs is LOW: Output LOW.
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
                 signalSystem.setLeafOutput(entity, side, (byte) 0, andGateComponent.delay);
             }
@@ -67,11 +70,13 @@ public class GateAction extends BaseComponentSystem {
 
     @ReceiveEvent(components = {BlockComponent.class, OrGateComponent.class, SignalLeafComponent.class})
     public void signalOrChange(LeafNodeSignalChange event, EntityRef entity, BlockComponent blockComponent, OrGateComponent orGateComponent) {
-        if (event.getInputs().size() > 0 && event.getInputs().size() != 0) {
+        if (event.getInputs().size() > 0) {
+            // At least one input is HIGH: Output HIGH.
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
                 signalSystem.setLeafOutput(entity, side, orGateComponent.strength, orGateComponent.delay);
             }
         } else {
+            // No input is connected, or all inputs are LOW: Output LOW.
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
                 signalSystem.setLeafOutput(entity, side, (byte) 0, orGateComponent.delay);
             }
@@ -82,12 +87,12 @@ public class GateAction extends BaseComponentSystem {
     public void signalNotChange(LeafNodeSignalChange event, EntityRef entity, BlockComponent blockComponent, NotGateComponent notGateComponent) {
         final int SIDE_BACK = 32;
         if (signalSystem.getUntransformedConnectedInputs(entity) == SIDE_BACK && event.getInputs().size() == 0) {
-            // One LOW input, so output HIGH.
+            // One LOW input: output HIGH.
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
                 signalSystem.setLeafOutput(entity, side, notGateComponent.strength, notGateComponent.delay);
             }
         } else {
-            // Either a HIGH input, or no input at all. Output LOW.
+            // Either a HIGH input, or no input at all: Output LOW.
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
                 signalSystem.setLeafOutput(entity, side, (byte) 0, notGateComponent.delay);
             }
