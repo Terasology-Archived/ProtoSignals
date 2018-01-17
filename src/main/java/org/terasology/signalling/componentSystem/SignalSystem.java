@@ -26,7 +26,6 @@ import org.terasology.entitySystem.systems.RegisterMode;
 import org.terasology.entitySystem.systems.RegisterSystem;
 import org.terasology.entitySystem.systems.UpdateSubscriberSystem;
 import org.terasology.logic.config.ModuleConfigManager;
-import org.terasology.math.Rotation;
 import org.terasology.math.Side;
 import org.terasology.math.SideBitFlag;
 import org.terasology.math.geom.Vector3i;
@@ -133,7 +132,11 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
             if (signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(getTransformedSide(entityRef,side))] == strength)
                 return true;
 
-            delays.add(new SignalDelayHandler(delay, time.getGameTimeInMs(), entityRef, strength, side));
+            SignalDelayHandler handler = new SignalDelayHandler(delay, time.getGameTimeInMs(), entityRef, strength, side);
+            if(delays.contains(handler)){
+                delays.remove(handler);
+            }
+            delays.add(handler);
             return true;
 
         }
@@ -294,6 +297,15 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
             return currentTime + delta;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof SignalDelayHandler && ((SignalDelayHandler) o).side == side && ((SignalDelayHandler) o).entityRef.equals(entityRef);
+        }
+
+        @Override
+        public int hashCode() {
+            return entityRef.hashCode() + 31 * side.getVector3i().hashCode();
+        }
     }
 
     public static class SignalDelayComparitor implements Comparator<SignalDelayHandler> {

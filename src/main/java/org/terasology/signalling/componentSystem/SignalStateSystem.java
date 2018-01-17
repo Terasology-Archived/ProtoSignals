@@ -29,6 +29,7 @@ import org.terasology.math.SideBitFlag;
 import org.terasology.registry.In;
 import org.terasology.signalling.components.CableComponent;
 import org.terasology.signalling.components.SignalLeafComponent;
+import org.terasology.world.OnChangedBlock;
 import org.terasology.world.WorldProvider;
 import org.terasology.world.block.Block;
 import org.terasology.world.block.BlockComponent;
