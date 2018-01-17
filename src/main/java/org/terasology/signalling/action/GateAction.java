@@ -80,13 +80,16 @@ public class GateAction extends BaseComponentSystem {
 
     @ReceiveEvent(components = {BlockComponent.class, NotGateComponent.class, SignalLeafComponent.class})
     public void signalNotChange(LeafNodeSignalChange event, EntityRef entity, BlockComponent blockComponent, NotGateComponent notGateComponent) {
-        if (event.getInputs().size() == 1) {
-            for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
-                signalSystem.setLeafOutput(entity, side, (byte) 0, notGateComponent.delay);
-            }
-        } else {
+        final int SIDE_BACK = 32;
+        if (signalSystem.getConnectedInputs(entity) == SIDE_BACK && event.getInputs().size() == 0) {
+            // One LOW input, so output HIGH.
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
                 signalSystem.setLeafOutput(entity, side, notGateComponent.strength, notGateComponent.delay);
+            }
+        } else {
+            // Either a HIGH input, or no input at all. Output LOW.
+            for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
+                signalSystem.setLeafOutput(entity, side, (byte) 0, notGateComponent.delay);
             }
         }
     }
