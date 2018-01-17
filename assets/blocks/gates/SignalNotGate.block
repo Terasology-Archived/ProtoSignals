@@ -1,0 +1,13 @@
+{
+    "displayName": "Signal NOT Gate",
+    "family": "horizontal",
+    "tiles": {
+        "all": "ProtoSignals:SignalNotGate",
+        "back": "ProtoSignals:SignalInput",
+        "front": "ProtoSignals:SignalOutput"
+    },
+    "entity": {
+        "prefab": "ProtoSignals:SignalNotGate",
+         "keepActive": true
+    }
+}

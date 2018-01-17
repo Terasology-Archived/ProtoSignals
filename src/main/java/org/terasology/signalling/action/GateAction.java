@@ -26,6 +26,7 @@ import org.terasology.registry.In;
 import org.terasology.signalling.componentSystem.SignalSystem;
 import org.terasology.signalling.components.SignalLeafComponent;
 import org.terasology.signalling.components.gates.AndGateComponent;
+import org.terasology.signalling.components.gates.NotGateComponent;
 import org.terasology.signalling.components.gates.OrGateComponent;
 import org.terasology.signalling.components.gates.XorGateComponent;
 import org.terasology.signalling.event.LeafNodeSignalChange;
@@ -41,11 +42,11 @@ public class GateAction extends BaseComponentSystem {
     public void signalXorChange(LeafNodeSignalChange event, EntityRef entity, BlockComponent blockComponent, XorGateComponent xorGateComponent) {
         if (event.getInputs().size() == 1 && event.getInputs().size() != 0) {
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
-                signalSystem.setLeafOutput(entity, side, xorGateComponent.strength,xorGateComponent.delay);
+                signalSystem.setLeafOutput(entity, side, xorGateComponent.strength, xorGateComponent.delay);
             }
         } else {
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
-                signalSystem.setLeafOutput(entity, side, (byte) 0,xorGateComponent.delay);
+                signalSystem.setLeafOutput(entity, side, (byte) 0, xorGateComponent.delay);
             }
         }
     }
@@ -55,24 +56,37 @@ public class GateAction extends BaseComponentSystem {
 
         if (event.getInputs().size() == SideBitFlag.getSides(signalSystem.getConnectedInputs(entity)).size() && event.getInputs().size() != 0) {
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
-                signalSystem.setLeafOutput(entity, side, andGateComponent.strength,andGateComponent.delay);
+                signalSystem.setLeafOutput(entity, side, andGateComponent.strength, andGateComponent.delay);
             }
         } else {
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
-                signalSystem.setLeafOutput(entity, side, (byte) 0,andGateComponent.delay);
+                signalSystem.setLeafOutput(entity, side, (byte) 0, andGateComponent.delay);
             }
         }
     }
 
     @ReceiveEvent(components = {BlockComponent.class, OrGateComponent.class, SignalLeafComponent.class})
-    public void signalOrChange(LeafNodeSignalChange event, EntityRef entity, BlockComponent blockComponent,OrGateComponent orGateComponent) {
+    public void signalOrChange(LeafNodeSignalChange event, EntityRef entity, BlockComponent blockComponent, OrGateComponent orGateComponent) {
         if (event.getInputs().size() > 0 && event.getInputs().size() != 0) {
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
-                signalSystem.setLeafOutput(entity, side, orGateComponent.strength,orGateComponent.delay);
+                signalSystem.setLeafOutput(entity, side, orGateComponent.strength, orGateComponent.delay);
             }
         } else {
             for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
-                signalSystem.setLeafOutput(entity, side, (byte) 0,orGateComponent.delay);
+                signalSystem.setLeafOutput(entity, side, (byte) 0, orGateComponent.delay);
+            }
+        }
+    }
+
+    @ReceiveEvent(components = {BlockComponent.class, NotGateComponent.class, SignalLeafComponent.class})
+    public void signalNotChange(LeafNodeSignalChange event, EntityRef entity, BlockComponent blockComponent, NotGateComponent notGateComponent) {
+        if (event.getInputs().size() == 1) {
+            for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
+                signalSystem.setLeafOutput(entity, side, (byte) 0, notGateComponent.delay);
+            }
+        } else {
+            for (Side side : SideBitFlag.getSides(signalSystem.getConnectedOutputs(entity))) {
+                signalSystem.setLeafOutput(entity, side, notGateComponent.strength, notGateComponent.delay);
             }
         }
     }

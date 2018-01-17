@@ -1,0 +1,7 @@
+{
+    "SignalLeaf":{
+        "inputs": 32,
+	        "outputs": 4
+    },
+    "NotGate": {}
+}
