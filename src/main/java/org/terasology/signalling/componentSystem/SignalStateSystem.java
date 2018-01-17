@@ -44,6 +44,7 @@ public class SignalStateSystem extends BaseComponentSystem {
     private WorldProvider worldProvider;
     @In
     private BlockManager blockManager;
+
     /**
      * Adds the placed block to the correct list
      *
@@ -52,21 +53,21 @@ public class SignalStateSystem extends BaseComponentSystem {
      */
     @ReceiveEvent()
     public void onBlockPlaced(OnBlockItemPlaced event, EntityRef entityRef) {
-        signalSystem.signalAllSidesAroundLocation(event.getPosition(),Integer.MAX_VALUE);
+        signalSystem.signalAllSidesAroundLocation(event.getPosition(), Integer.MAX_VALUE);
     }
 
     @ReceiveEvent(components = {SignalLeafComponent.class})
     public void onLeafRemoved(DoDestroyEvent event, EntityRef block) {
         BlockComponent blockComponent = block.getComponent(BlockComponent.class);
         worldProvider.setBlock(blockComponent.getPosition(), blockManager.getBlock(BlockManager.AIR_ID));
-        signalSystem.signalAllSidesAroundLocation(blockComponent.getPosition(),Integer.MAX_VALUE);
+        signalSystem.signalAllSidesAroundLocation(blockComponent.getPosition(), Integer.MAX_VALUE);
     }
 
     @ReceiveEvent(components = {CableComponent.class})
     public void onCableRemoved(DoDestroyEvent event, EntityRef block) {
         BlockComponent blockComponent = block.getComponent(BlockComponent.class);
         worldProvider.setBlock(blockComponent.getPosition(), blockManager.getBlock(BlockManager.AIR_ID));
-        signalSystem.signalAllSidesAroundLocation(blockComponent.getPosition(),Integer.MAX_VALUE);
+        signalSystem.signalAllSidesAroundLocation(blockComponent.getPosition(), Integer.MAX_VALUE);
     }
 
 }

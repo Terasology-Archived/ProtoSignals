@@ -32,7 +32,7 @@ public interface GateSignalChangeHandler {
      * Called when delayed trigger event is being called for this gate with the specified actionId.
      *
      * @param actionId The type of action the entity has performed
-     * @param entity The entity performing the action
+     * @param entity   The entity performing the action
      */
     void handleDelayedTrigger(String actionId, EntityRef entity);
 }
