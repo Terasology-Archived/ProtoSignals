@@ -1,6 +1,6 @@
 {
     "SignalLeaf":{
-        "outputs": 63
+        "outputs": ["LEFT","RIGHT","FRONT","BACK","TOP","BOTTOM"]
     },
     "ToggleSwitch" : {
 

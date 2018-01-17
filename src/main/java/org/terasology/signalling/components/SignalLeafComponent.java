@@ -16,9 +16,13 @@
 package org.terasology.signalling.components;
 
 import org.terasology.entitySystem.Component;
+import org.terasology.math.Side;
+
+import java.util.EnumSet;
+import java.util.Set;
 
 public class SignalLeafComponent implements Component {
-    public byte outputs = 0;
-    public byte inputs = 0;
+    public Set<Side> outputs = EnumSet.noneOf(Side.class);
+    public Set<Side> inputs = EnumSet.noneOf(Side.class);
 }
 

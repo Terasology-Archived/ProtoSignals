@@ -26,6 +26,7 @@ import org.terasology.entitySystem.systems.RegisterMode;
 import org.terasology.entitySystem.systems.RegisterSystem;
 import org.terasology.entitySystem.systems.UpdateSubscriberSystem;
 import org.terasology.logic.config.ModuleConfigManager;
+import org.terasology.math.Rotation;
 import org.terasology.math.Side;
 import org.terasology.math.SideBitFlag;
 import org.terasology.math.geom.Vector3i;
@@ -42,6 +43,7 @@ import org.terasology.world.block.BlockComponent;
 import org.terasology.world.block.family.MultiConnectFamily;
 
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
@@ -63,93 +65,53 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
     private BlockEntityRegistry blockEntityRegistry;
     @In
     private ModuleConfigManager moduleConfigManager;
+    
 
-
-    private byte getConnection(EntityRef entityRef, byte sides, boolean transform) {
+    public Side getTransformedSide(EntityRef entityRef,Side side) {
         BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
         if (blockComponent == null)
-            return 0;
-        Block block = blockComponent.getBlock();
-        Vector3i location = blockComponent.getPosition();
-        if (entityRef.hasComponent(SignalLeafComponent.class)) {
-            byte result = (byte) 0;
-            for (Side side : SideBitFlag.getSides(sides)) {
-                Side rotatedSide = block.getRotation().rotate(side);
-                EntityRef neighborEntity = blockEntityRegistry.getBlockEntityAt(new Vector3i(location).add(rotatedSide.getVector3i()));
-                if (neighborEntity.hasComponent(CableComponent.class) || neighborEntity.hasComponent(SignalLeafComponent.class)) {
-                    result |= transform ? SideBitFlag.getSide(block.getRotation().rotate(side)) : SideBitFlag.getSide(side);
-                }
+            return null;
+        return blockComponent.getBlock().getRotation().rotate(side);
+
+    }
+
+    public EnumSet<Side> getActiveSides(EntityRef entityRef,Set<Side> sides) {
+        BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
+        if (blockComponent == null)
+            return EnumSet.noneOf(Side.class);
+
+        EnumSet<Side> result = EnumSet.noneOf(Side.class);
+        for (Side side : sides) {
+
+            EntityRef neighborEntity = blockEntityRegistry.getBlockEntityAt(new Vector3i(new Vector3i(blockComponent.getPosition())).add(getTransformedSide(entityRef, side).getVector3i()));
+            if (neighborEntity.hasComponent(CableComponent.class) || neighborEntity.hasComponent(SignalLeafComponent.class)) {
+                result.add(side);
             }
-            return result;
         }
-        return 0;
+        return result;
     }
-
-    private byte getConnection(EntityRef entityRef, byte sides) {
-        return getConnection(entityRef, sides, true);
-    }
-
-    private byte getUntransformedConnection(EntityRef entityRef, byte sides) {
-        return getConnection(entityRef, sides, false);
-    }
-
-
-    public byte getConnectedInputs(EntityRef entityRef) {
-        SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
-        if (signalStateComponent == null)
-            return 0;
-        return getConnection(entityRef, signalStateComponent.inputs);
-    }
-
-    public byte getUntransformedConnectedInputs(EntityRef entityRef) {
-        SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
-        if (signalStateComponent == null)
-            return 0;
-        return getUntransformedConnection(entityRef, signalStateComponent.inputs);
-    }
-
-    public byte getConnectedOutputs(EntityRef entityRef) {
-        SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
-        if (signalStateComponent == null)
-            return 0;
-        return getConnection(entityRef, signalStateComponent.outputs);
-    }
-
-    public byte getUntransformedConnectedOutputs(EntityRef entityRef) {
-        SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
-        if (signalStateComponent == null)
-            return 0;
-        return getUntransformedConnection(entityRef, signalStateComponent.outputs);
-    }
-
-    public byte getAllConnections(EntityRef entityRef) {
-        SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
-        if (signalStateComponent == null)
-            return 0;
-        return getConnection(entityRef, (byte) (signalStateComponent.outputs | signalStateComponent.inputs));
-    }
-
 
     public int getLeafOutput(EntityRef entityRef, Side side) {
         SignalStateComponent signalStateComponent = entityRef.getComponent(SignalStateComponent.class);
         if (signalStateComponent == null)
             return 0;
-        return signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)];
+        return signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(getTransformedSide(entityRef,side))];
     }
 
     public boolean setLeafOutput(EntityRef entityRef, Side side, byte strength) {
-        if (!entityRef.hasComponent(SignalLeafComponent.class))
+        SignalLeafComponent signalLeafComponent = entityRef.getComponent(SignalLeafComponent.class);
+        if (signalLeafComponent == null)
             return false;
 
-        if ((getConnectedOutputs(entityRef) & SideBitFlag.getSide(side)) > 0) {
+        if (signalLeafComponent.outputs.contains(side)) {
 
+            int sideIndex = SignalStateComponent.OUTPUT_SIDES.indexOf(getTransformedSide(entityRef,side));
             SignalStateComponent signalStateComponent = entityRef.getComponent(SignalStateComponent.class);
             if (signalStateComponent == null)
                 signalStateComponent = new SignalStateComponent();
-            if (signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] == strength)
+            if (signalStateComponent.outputs[sideIndex] == strength)
                 return true;
 
-            int sideIndex = SignalStateComponent.OUTPUT_SIDES.indexOf(side);
             int previousValue = signalStateComponent.outputs[sideIndex];
             signalStateComponent.outputs[sideIndex] = strength;
             entityRef.addOrSaveComponent(signalStateComponent);
@@ -160,13 +122,15 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
     }
 
     public boolean setLeafOutput(EntityRef entityRef, Side side, byte strength, long delay) {
-        if (!entityRef.hasComponent(SignalLeafComponent.class))
+        SignalLeafComponent signalLeafComponent = entityRef.getComponent(SignalLeafComponent.class);
+        if (signalLeafComponent == null)
             return false;
-        if ((getConnectedOutputs(entityRef) & SideBitFlag.getSide(side)) > 0) {
+
+        if (signalLeafComponent.outputs.contains(side)) {
             SignalStateComponent signalStateComponent = entityRef.getComponent(SignalStateComponent.class);
             if (signalStateComponent == null)
                 signalStateComponent = new SignalStateComponent();
-            if (signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] == strength)
+            if (signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(getTransformedSide(entityRef,side))] == strength)
                 return true;
 
             delays.add(new SignalDelayHandler(delay, time.getGameTimeInMs(), entityRef, strength, side));
@@ -182,8 +146,11 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
         BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
 
         AtomicInteger strength = new AtomicInteger();
-        findDistanceToLeaf(blockComponent.getPosition(), side, (targetSide, distance, target) -> {
-            int outputStrength = getLeafOutput(target, targetSide);
+        findDistanceToLeaf(blockComponent.getPosition(), getTransformedSide(entityRef,side), (targetSide, distance, target) -> {
+            SignalStateComponent signalStateComponent = target.getComponent(SignalStateComponent.class);
+            int outputStrength = 0;
+            if (signalStateComponent != null)
+                outputStrength = signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(targetSide)];
             if (outputStrength == -1) {
                 strength.set(-1);
                 return false;
@@ -197,17 +164,26 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
         return strength.get();
     }
 
-    public byte getConnections(EntityRef entityRef) {
+    private EnumSet<Side> getConnections(EntityRef entityRef) {
         if (entityRef.hasComponent(SignalLeafComponent.class)) {
-            return getAllConnections(entityRef);
+            SignalLeafComponent signalLeafComponent = entityRef.getComponent(SignalLeafComponent.class);
+            EnumSet<Side> sides = EnumSet.noneOf(Side.class);
+            for (Side side : signalLeafComponent.inputs) {
+                sides.add(getTransformedSide(entityRef,side));
+            }
+
+            for (Side side : signalLeafComponent.outputs) {
+                sides.add(getTransformedSide(entityRef,side));
+            }
+            return sides;
         } else if (entityRef.hasComponent(CableComponent.class)) {
             BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
             Block block = blockComponent.getBlock();
             if (block.getBlockFamily() instanceof MultiConnectFamily) {
-                return ((MultiConnectFamily) block.getBlockFamily()).getConnections(block.getURI());
+                return SideBitFlag.getSides(((MultiConnectFamily) block.getBlockFamily()).getConnections(block.getURI()));
             }
         }
-        return 0;
+        return EnumSet.noneOf(Side.class);
     }
 
 
@@ -225,7 +201,7 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
     public void signalAllLeafsFromSide(EntityRef entityRef, Side side, int distanceCap) {
         if (entityRef.hasComponent(SignalLeafComponent.class)) {
             BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
-            this.findDistanceToLeaf(blockComponent.getPosition(), side, (targetSide, distance, target) -> {
+            this.findDistanceToLeaf(blockComponent.getPosition(), getTransformedSide(entityRef,side), (targetSide, distance, target) -> {
                 signalLeafChange(target);
                 return true;
             }, distanceCap);
@@ -234,8 +210,10 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
 
 
     public void signalLeafChange(EntityRef entityRef) {
+        SignalLeafComponent signalLeafComponent = entityRef.getComponent(SignalLeafComponent.class);
+
         Map<Side, Integer> inputs = Maps.newHashMap();
-        for (Side side : SideBitFlag.getSides(this.getConnectedInputs(entityRef))) {
+        for (Side side : signalLeafComponent.inputs) {
             if (getLeafInput(entityRef, side) != 0) {
                 inputs.put(side, getLeafInput(entityRef, side));
             }
@@ -262,7 +240,7 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
             for (Vector3i entry : entries) {
                 EntityRef ref = blockEntityRegistry.getBlockEntityAt(entry);
                 BlockComponent blockComponent = ref.getComponent(BlockComponent.class);
-                for (Side s : SideBitFlag.getSides(getConnections(ref))) {
+                for (Side s : getConnections(ref)) {
                     Vector3i loc = new Vector3i(blockComponent.getPosition()).add(s.getVector3i());
                     EntityRef nextEntityRef = blockEntityRegistry.getBlockEntityAt(loc);
                     if (!visited.contains(loc)) {
