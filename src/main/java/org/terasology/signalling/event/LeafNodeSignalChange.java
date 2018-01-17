@@ -23,9 +23,9 @@ import java.util.Map;
 
 public class LeafNodeSignalChange extends AbstractConsumableEvent {
 
-    private Map<Side,Integer> inputs;
+    private Map<Side, Integer> inputs;
 
-    public LeafNodeSignalChange(Map<Side,Integer> inputs){
+    public LeafNodeSignalChange(Map<Side, Integer> inputs) {
         this.inputs = inputs;
     }
 

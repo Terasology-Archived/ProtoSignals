@@ -75,8 +75,8 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
             byte result = (byte) 0;
             for (Side side : SideBitFlag.getSides(sides)) {
                 Side rotatedSide = block.getRotation().rotate(side);
-                EntityRef  neighborEntity = blockEntityRegistry.getBlockEntityAt(new Vector3i(location).add(rotatedSide.getVector3i()));
-                if(neighborEntity.hasComponent(CableComponent.class) || neighborEntity.hasComponent(SignalLeafComponent.class)) {
+                EntityRef neighborEntity = blockEntityRegistry.getBlockEntityAt(new Vector3i(location).add(rotatedSide.getVector3i()));
+                if (neighborEntity.hasComponent(CableComponent.class) || neighborEntity.hasComponent(SignalLeafComponent.class)) {
                     result |= transform ? SideBitFlag.getSide(block.getRotation().rotate(side)) : SideBitFlag.getSide(side);
                 }
             }
@@ -94,46 +94,45 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
     }
 
 
-
-    public byte getConnectedInputs(EntityRef entityRef){
+    public byte getConnectedInputs(EntityRef entityRef) {
         SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
-        if(signalStateComponent == null)
+        if (signalStateComponent == null)
             return 0;
         return getConnection(entityRef, signalStateComponent.inputs);
     }
 
-    public byte getUntransformedConnectedInputs(EntityRef entityRef){
+    public byte getUntransformedConnectedInputs(EntityRef entityRef) {
         SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
-        if(signalStateComponent == null)
+        if (signalStateComponent == null)
             return 0;
         return getUntransformedConnection(entityRef, signalStateComponent.inputs);
     }
 
-    public byte getConnectedOutputs(EntityRef entityRef){
+    public byte getConnectedOutputs(EntityRef entityRef) {
         SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
-        if(signalStateComponent == null)
+        if (signalStateComponent == null)
             return 0;
         return getConnection(entityRef, signalStateComponent.outputs);
     }
 
-    public byte getUntransformedConnectedOutputs(EntityRef entityRef){
+    public byte getUntransformedConnectedOutputs(EntityRef entityRef) {
         SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
-        if(signalStateComponent == null)
+        if (signalStateComponent == null)
             return 0;
         return getUntransformedConnection(entityRef, signalStateComponent.outputs);
     }
 
-    public byte getAllConnections(EntityRef entityRef){
+    public byte getAllConnections(EntityRef entityRef) {
         SignalLeafComponent signalStateComponent = entityRef.getComponent(SignalLeafComponent.class);
-        if(signalStateComponent == null)
+        if (signalStateComponent == null)
             return 0;
         return getConnection(entityRef, (byte) (signalStateComponent.outputs | signalStateComponent.inputs));
     }
 
 
-    public int getLeafOutput(EntityRef entityRef,Side side){
+    public int getLeafOutput(EntityRef entityRef, Side side) {
         SignalStateComponent signalStateComponent = entityRef.getComponent(SignalStateComponent.class);
-        if(signalStateComponent == null)
+        if (signalStateComponent == null)
             return 0;
         return signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)];
     }
@@ -147,20 +146,20 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
             SignalStateComponent signalStateComponent = entityRef.getComponent(SignalStateComponent.class);
             if (signalStateComponent == null)
                 signalStateComponent = new SignalStateComponent();
-            if(signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] == strength)
+            if (signalStateComponent.outputs[SignalStateComponent.OUTPUT_SIDES.indexOf(side)] == strength)
                 return true;
 
             int sideIndex = SignalStateComponent.OUTPUT_SIDES.indexOf(side);
             int previousValue = signalStateComponent.outputs[sideIndex];
             signalStateComponent.outputs[sideIndex] = strength;
             entityRef.addOrSaveComponent(signalStateComponent);
-            signalAllLeafsFromSide(entityRef, side,Math.max(strength,previousValue));
+            signalAllLeafsFromSide(entityRef, side, Math.max(strength, previousValue));
             return true;
         }
         return false;
     }
 
-    public boolean setLeafOutput(EntityRef entityRef, Side side, byte strength,long delay) {
+    public boolean setLeafOutput(EntityRef entityRef, Side side, byte strength, long delay) {
         if (!entityRef.hasComponent(SignalLeafComponent.class))
             return false;
         if ((getConnectedOutputs(entityRef) & SideBitFlag.getSide(side)) > 0) {
@@ -178,32 +177,30 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
     }
 
 
-    public int getLeafInput(EntityRef entityRef, Side side){
+    public int getLeafInput(EntityRef entityRef, Side side) {
 
-        BlockComponent blockComponent =  entityRef.getComponent(BlockComponent.class);
+        BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
 
         AtomicInteger strength = new AtomicInteger();
         findDistanceToLeaf(blockComponent.getPosition(), side, (targetSide, distance, target) -> {
-            int outputStrength = getLeafOutput(target,targetSide);
-            if(outputStrength == -1) {
+            int outputStrength = getLeafOutput(target, targetSide);
+            if (outputStrength == -1) {
                 strength.set(-1);
                 return false;
             }
             int delta = outputStrength - distance;
-            if(delta > 0 && strength.get() < delta){
+            if (delta > 0 && strength.get() < delta) {
                 strength.set(delta);
             }
             return true;
-        },Integer.MAX_VALUE);
+        }, Integer.MAX_VALUE);
         return strength.get();
     }
 
-    public byte getConnections(EntityRef entityRef)
-    {
-        if(entityRef.hasComponent(SignalLeafComponent.class)) {
+    public byte getConnections(EntityRef entityRef) {
+        if (entityRef.hasComponent(SignalLeafComponent.class)) {
             return getAllConnections(entityRef);
-        }
-        else if(entityRef.hasComponent(CableComponent.class)) {
+        } else if (entityRef.hasComponent(CableComponent.class)) {
             BlockComponent blockComponent = entityRef.getComponent(BlockComponent.class);
             Block block = blockComponent.getBlock();
             if (block.getBlockFamily() instanceof MultiConnectFamily) {
@@ -214,9 +211,9 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
     }
 
 
-    public void signalAllSidesAroundLocation(Vector3i location, int distanceCap){
+    public void signalAllSidesAroundLocation(Vector3i location, int distanceCap) {
 
-        for(Side side: Side.values()) {
+        for (Side side : Side.values()) {
             this.findDistanceToLeaf(location, side, (targetSide, distance, target) -> {
                 signalLeafChange(target);
                 return true;
@@ -231,15 +228,15 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
             this.findDistanceToLeaf(blockComponent.getPosition(), side, (targetSide, distance, target) -> {
                 signalLeafChange(target);
                 return true;
-            },distanceCap);
+            }, distanceCap);
         }
     }
 
 
     public void signalLeafChange(EntityRef entityRef) {
-        Map<Side,Integer> inputs = Maps.newHashMap();
-        for(Side side: SideBitFlag.getSides(this.getConnectedInputs(entityRef))){
-            if(getLeafInput(entityRef,side) != 0) {
+        Map<Side, Integer> inputs = Maps.newHashMap();
+        for (Side side : SideBitFlag.getSides(this.getConnectedInputs(entityRef))) {
+            if (getLeafInput(entityRef, side) != 0) {
                 inputs.put(side, getLeafInput(entityRef, side));
             }
         }
@@ -248,9 +245,9 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
 
     public void findDistanceToLeaf(Vector3i location, Side side, SignalResponse handler, int distanceCap) {
         Vector3i startingSide = new Vector3i(location).add(side.getVector3i());
-        EntityRef entityRef =  blockEntityRegistry.getBlockEntityAt(startingSide);
-        if(entityRef.hasComponent(SignalLeafComponent.class)){
-            handler.response(side.reverse(),0,entityRef);
+        EntityRef entityRef = blockEntityRegistry.getBlockEntityAt(startingSide);
+        if (entityRef.hasComponent(SignalLeafComponent.class)) {
+            handler.response(side.reverse(), 0, entityRef);
             return;
         }
 
@@ -259,7 +256,7 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
         Set<Vector3i> visited = Sets.newHashSet(location);
         do {
             int minimum = toVisit.firstKey();
-            if(minimum >  distanceCap )
+            if (minimum > distanceCap)
                 break;
             Set<Vector3i> entries = toVisit.get(minimum);
             for (Vector3i entry : entries) {
@@ -270,7 +267,7 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
                     EntityRef nextEntityRef = blockEntityRegistry.getBlockEntityAt(loc);
                     if (!visited.contains(loc)) {
                         if (nextEntityRef.hasComponent(SignalLeafComponent.class)) {
-                            if(!handler.response(s.reverse(),minimum,nextEntityRef))
+                            if (!handler.response(s.reverse(), minimum, nextEntityRef))
                                 return;
                         } else if (nextEntityRef.hasComponent(CableComponent.class)) {
                             toVisit.putIfAbsent(minimum + 1, Sets.newHashSet());
@@ -289,14 +286,14 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
 
     @Override
     public void update(float delta) {
-        while (delays.peek() != null && delays.peek().getTime() < time.getGameTimeInMs()){
+        while (delays.peek() != null && delays.peek().getTime() < time.getGameTimeInMs()) {
             SignalDelayHandler signalDelayHandler = delays.poll();
-            this.setLeafOutput(signalDelayHandler.entityRef,signalDelayHandler.side,signalDelayHandler.strength);
+            this.setLeafOutput(signalDelayHandler.entityRef, signalDelayHandler.side, signalDelayHandler.strength);
         }
     }
 
-    public interface SignalResponse{
-        boolean response(Side targetSide,int distance, EntityRef target);
+    public interface SignalResponse {
+        boolean response(Side targetSide, int distance, EntityRef target);
     }
 
     public static class SignalDelayHandler {
@@ -306,7 +303,7 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
         public final byte strength;
         public final Side side;
 
-        SignalDelayHandler(long delta, long currentTime, EntityRef entityRef, byte strength, Side side){
+        SignalDelayHandler(long delta, long currentTime, EntityRef entityRef, byte strength, Side side) {
             this.delta = delta;
             this.currentTime = currentTime;
 
@@ -321,7 +318,7 @@ public class SignalSystem extends BaseComponentSystem implements UpdateSubscribe
 
     }
 
-    public static class  SignalDelayComparitor implements Comparator<SignalDelayHandler>{
+    public static class SignalDelayComparitor implements Comparator<SignalDelayHandler> {
 
         @Override
         public int compare(SignalDelayHandler t1, SignalDelayHandler t2) {

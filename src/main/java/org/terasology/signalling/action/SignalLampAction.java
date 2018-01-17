@@ -33,7 +33,7 @@ import org.terasology.world.block.BlockManager;
 
 
 @RegisterSystem(RegisterMode.AUTHORITY)
-public class SignalLampAction  extends BaseComponentSystem {
+public class SignalLampAction extends BaseComponentSystem {
     @In
     private BlockManager blockManager;
 

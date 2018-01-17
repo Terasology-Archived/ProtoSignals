@@ -16,6 +16,7 @@
 package org.terasology.signalling.components.gates;
 
 import org.terasology.entitySystem.Component;
+
 public class XorGateComponent implements Component {
     public byte strength = 12;
     public long delay = 500;
