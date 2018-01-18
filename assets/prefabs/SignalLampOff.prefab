@@ -3,6 +3,6 @@
 
     },
     "SignalLeaf":{
-        "inputs": 63
+        "inputs": ["LEFT","RIGHT","FRONT","BACK","TOP","BOTTOM"]
     }
 }

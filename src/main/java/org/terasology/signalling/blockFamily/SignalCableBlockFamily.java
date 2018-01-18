@@ -89,8 +89,14 @@ public class SignalCableBlockFamily extends MultiConnectFamily {
         if (entityRef.hasComponent(SignalLeafComponent.class)) {
             SignalLeafComponent leafNodeComponent = entityRef.getComponent(SignalLeafComponent.class);
 
-            for (Side side : SideBitFlag.getSides(signalSystem.getAllConnections(entityRef))) {
-                if (side == connectSide.reverse()) {
+            for (Side side : leafNodeComponent.inputs) {
+                if (signalSystem.getTransformedSide(entityRef,side)== connectSide.reverse()) {
+                    return true;
+                }
+            }
+
+            for (Side side : leafNodeComponent.outputs) {
+                if (signalSystem.getTransformedSide(entityRef,side)== connectSide.reverse()) {
                     return true;
                 }
             }

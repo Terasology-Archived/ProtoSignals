@@ -39,11 +39,11 @@ public class SignalSwitchAction extends BaseComponentSystem {
     public void signalActivated(ActivateEvent event, EntityRef entity, ToggleSwitchComponent signalSwitchComponent, SignalLeafComponent leafNodeComponent) {
         signalSwitchComponent.isActive = !signalSwitchComponent.isActive;
         if (signalSwitchComponent.isActive) {
-            for (Side side : SideBitFlag.getSides(leafNodeComponent.outputs)) {
+            for (Side side : leafNodeComponent.outputs) {
                 signalSystem.setLeafOutput(entity, side, signalSwitchComponent.strength);
             }
         } else {
-            for (Side side : SideBitFlag.getSides(leafNodeComponent.outputs)) {
+            for (Side side : leafNodeComponent.outputs) {
                 signalSystem.setLeafOutput(entity, side, (byte) 0);
             }
         }
